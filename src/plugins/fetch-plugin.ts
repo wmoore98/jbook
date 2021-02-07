@@ -14,30 +14,16 @@ export const fetchPlugin = (inputCode: string) => {
       }));
 
       build.onLoad(
+        { filter: /.*/ },
+        async ({ path }: esbuild.OnLoadArgs) =>
+          await getCachedResult<esbuild.OnLoadResult>(path)
+      );
+
+      build.onLoad(
         { filter: /\.css$/ },
         async ({ path }: esbuild.OnLoadArgs) => {
-          const cachedResult = await getCachedResult<esbuild.OnLoadResult>(
-            path
-          );
-          if (cachedResult) {
-            return cachedResult;
-          }
-
-          console.log(path);
-
           const { data, request } = await axios.get(path);
-
-          const escapedData = data
-            .replace(/\n/g, "")
-            .replace(/"/g, '\\"')
-            .replace(/'/g, "\\'");
-
-          const contents = `
-          const style = document.createElement('style');
-          style.innerText = '${escapedData}';
-          document.head.appendChild(style);
-          `;
-
+          const contents = wrapCssWithJs(escape(data));
           const result: esbuild.OnLoadResult = {
             loader: "jsx",
             contents,
@@ -49,11 +35,6 @@ export const fetchPlugin = (inputCode: string) => {
       );
 
       build.onLoad({ filter: /.*/ }, async ({ path }: esbuild.OnLoadArgs) => {
-        const cachedResult = await getCachedResult<esbuild.OnLoadResult>(path);
-        if (cachedResult) {
-          return cachedResult;
-        }
-
         const { data, request } = await axios.get(path);
         const result: esbuild.OnLoadResult = {
           loader: "jsx",
@@ -73,4 +54,16 @@ function getCachedResult<T>(key: string) {
 
 function setCachedResult<T>(key: string, result: T) {
   return fileCache.setItem(key, result);
+}
+
+function escape(data: string): string {
+  return data.replace(/\n/g, "").replace(/"/g, '\\"').replace(/'/g, "\\'");
+}
+
+function wrapCssWithJs(css: string): string {
+  return `
+  const style = document.createElement('style');
+  style.innerText = '${css}';
+  document.head.appendChild(style);
+  `;
 }
