@@ -13,10 +13,43 @@ export const fetchPlugin = (inputCode: string) => {
         contents: inputCode,
       }));
 
+      build.onLoad(
+        { filter: /\.css$/ },
+        async ({ path }: esbuild.OnLoadArgs) => {
+          const cachedResult = await getCachedResult<esbuild.OnLoadResult>(
+            path
+          );
+          if (cachedResult) {
+            return cachedResult;
+          }
+
+          console.log(path);
+
+          const { data, request } = await axios.get(path);
+
+          const escapedData = data
+            .replace(/\n/g, "")
+            .replace(/"/g, '\\"')
+            .replace(/'/g, "\\'");
+
+          const contents = `
+          const style = document.createElement('style');
+          style.innerText = '${escapedData}';
+          document.head.appendChild(style);
+          `;
+
+          const result: esbuild.OnLoadResult = {
+            loader: "jsx",
+            contents,
+            resolveDir: new URL("./", request.responseURL).pathname,
+          };
+          await setCachedResult<esbuild.OnLoadResult>(path, result);
+          return result;
+        }
+      );
+
       build.onLoad({ filter: /.*/ }, async ({ path }: esbuild.OnLoadArgs) => {
-        const cachedResult = await fileCache.getItem<esbuild.OnLoadResult>(
-          path
-        );
+        const cachedResult = await getCachedResult<esbuild.OnLoadResult>(path);
         if (cachedResult) {
           return cachedResult;
         }
@@ -27,9 +60,17 @@ export const fetchPlugin = (inputCode: string) => {
           contents: data,
           resolveDir: new URL("./", request.responseURL).pathname,
         };
-        await fileCache.setItem(path, result);
+        await setCachedResult<esbuild.OnLoadResult>(path, result);
         return result;
       });
     },
   };
 };
+
+function getCachedResult<T>(key: string) {
+  return fileCache.getItem<T>(key);
+}
+
+function setCachedResult<T>(key: string, result: T) {
+  return fileCache.setItem(key, result);
+}
