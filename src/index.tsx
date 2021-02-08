@@ -5,6 +5,7 @@ import { unpkgPathPlugin, fetchPlugin } from "./plugins";
 
 const App: React.FC = () => {
   const ref = useRef<any>();
+  const iframe = useRef<any>();
   const [input, setInput] = useState("");
   const [code, setCode] = useState("");
 
@@ -34,9 +35,24 @@ const App: React.FC = () => {
         global: "window",
       },
     });
-    console.log(result);
-    setCode(result.outputFiles[0].text);
+
+    const parsedCode = result.outputFiles[0].text;
+    iframe.current.contentWindow.postMessage(parsedCode, "*");
   };
+
+  const html = `
+    <html>
+      <head></head>
+      <body>
+        <div id="root"></div>
+        <script>
+          window.addEventListener('message', (event) => {
+            eval(event.data);
+          }, false);
+        </script>
+      </body>
+    </html>
+  `;
 
   const cols = 60;
   const rows = 10;
@@ -53,6 +69,12 @@ const App: React.FC = () => {
         <button onClick={onClick}>Submit</button>
       </div>
       <pre>{code}</pre>
+      <iframe
+        title='frame1'
+        ref={iframe}
+        sandbox='allow-scripts'
+        srcDoc={html}
+      ></iframe>
     </div>
   );
 };
