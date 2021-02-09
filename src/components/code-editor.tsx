@@ -32,7 +32,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       codeShift,
       editor
     );
-    console.log(highlighter);
     highlighter.highLightOnDidChangeModelContent(
       () => {},
       () => {},
