@@ -1,6 +1,7 @@
 import * as esbuild from "esbuild-wasm";
 import { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
+import CodeEditor from "./components/code-editor";
 import { unpkgPathPlugin, fetchPlugin } from "./plugins";
 
 const App: React.FC = () => {
@@ -66,6 +67,7 @@ const App: React.FC = () => {
 
   return (
     <div>
+      <CodeEditor />
       <textarea
         onChange={(e) => setInput(e.target.value)}
         cols={cols}
