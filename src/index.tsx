@@ -1,13 +1,10 @@
+import MDEditor from "@uiw/react-md-editor";
 import "bulmaswatch/superhero/bulmaswatch.min.css";
 import ReactDOM from "react-dom";
-import CodeCell from "./components/code-cell";
+import TextEditor from "./components/text-editor";
 
 const App: React.FC = () => {
-  return (
-    <div>
-      <CodeCell />
-    </div>
-  );
+  return <TextEditor />;
 };
 
 ReactDOM.render(<App />, document.getElementById("root"));
